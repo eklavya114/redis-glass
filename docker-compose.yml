@@ -11,6 +11,7 @@ services:
       - AOF_FSYNC=everysec
       - AOF_REWRITE_SIZE_MB=64
       - DASHBOARD_PORT=8080
+      - DASHBOARD_PASSWORD=changeme
       - TLS_CERT_FILE=
       - TLS_KEY_FILE=
       - MAXMEMORY_MB=

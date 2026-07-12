@@ -90,7 +90,11 @@ func main() {
 				MemoryMaxBytes:  maxMemoryBytes,
 			}
 		}
-		go monitor.StartDashboard(dashboardPort, monitor.Sources{GetStats: getStats, Events: rec})
+		go monitor.StartDashboard(dashboardPort, monitor.Sources{
+			GetStats: getStats,
+			Events:   rec,
+			Password: os.Getenv("DASHBOARD_PASSWORD"),
+		})
 	}
 
 	errCh := make(chan error, 1)

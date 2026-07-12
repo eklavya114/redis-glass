@@ -4,6 +4,8 @@
 package monitor
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -30,9 +32,18 @@ type Stats struct {
 // Sources bundles what the dashboard needs to read. Events is optional —
 // if nil, the live command stream, latency chart, slow log, and hotkeys
 // panels simply stay empty (no error, no special-casing required of callers).
+//
+// Password, if non-empty, requires HTTP Basic Auth on every dashboard route
+// (username is ignored, only the password is checked). If empty, the
+// dashboard is unauthenticated — the same "opt-in, backward compatible"
+// pattern the rest of the server follows, but be aware that the dashboard
+// exposes live command data (keys, and values unless SENSITIVE_KEYS is set)
+// to anyone who can reach the port, so leaving it empty on anything but a
+// local/trusted network is a real exposure, not a convenience.
 type Sources struct {
 	GetStats func() Stats
 	Events   *events.Recorder
+	Password string
 }
 
 // StartDashboard serves the live monitoring SPA on 0.0.0.0:port. "/" serves
@@ -52,11 +63,40 @@ func StartDashboard(port string, src Sources) {
 		serveMonitorStream(w, r, src)
 	})
 
+	var handler http.Handler = mux
+	if src.Password != "" {
+		handler = requireAuth(src.Password, mux)
+		log.Println("Dashboard auth enabled")
+	} else {
+		log.Println("Dashboard auth disabled (set DASHBOARD_PASSWORD to require login)")
+	}
+
 	addr := "0.0.0.0:" + port
 	log.Printf("Dashboard listening on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Printf("dashboard error: %v", err)
 	}
+}
+
+// requireAuth wraps next with HTTP Basic Auth, checking only the password
+// (username is accepted but ignored) using a constant-time comparison so a
+// failed attempt can't be timed to learn how many characters matched.
+func requireAuth(password string, next http.Handler) http.Handler {
+	// Comparing SHA-256 sums (fixed-length) rather than the raw password
+	// avoids leaking the password's length via ConstantTimeCompare, which
+	// requires equal-length inputs and would otherwise need a length check
+	// up front — an easy, common way to accidentally reintroduce a timing leak.
+	want := sha256.Sum256([]byte(password))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, pass, ok := r.BasicAuth()
+		got := sha256.Sum256([]byte(pass))
+		if !ok || subtle.ConstantTimeCompare(want[:], got[:]) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="redis-glass dashboard"`)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 type statsPayload struct {

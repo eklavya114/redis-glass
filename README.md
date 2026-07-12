@@ -66,6 +66,13 @@ slow log, and the hot-keys panel. The key name stays visible; the value never
 appears. This activates the moment you set the env var: a live command stream
 without it would be a real liability, so it isn't left to chance.
 
+> ⚠️ **The dashboard has no access control unless you set `DASHBOARD_PASSWORD`.**
+> It shows live command data — keys, and values unless `SENSITIVE_KEYS` is set —
+> to anyone who can reach the port. This is fine on `localhost` or a fully
+> trusted network; it is not fine on anything else. Set `DASHBOARD_PASSWORD` and
+> the dashboard requires HTTP Basic Auth (any username, that password) on every
+> route, including the SSE stream.
+
 ## Connecting from your app
 
 redis-glass speaks standard RESP, so any Redis client library works unmodified:
@@ -147,6 +154,7 @@ synced before exit.
 | `AOF_FSYNC` | `everysec` | `always` / `everysec` / `no` — durability vs. speed tradeoff |
 | `AOF_REWRITE_SIZE_MB` | `64` | AOF size (MB) that triggers automatic compaction |
 | `DASHBOARD_PORT` | `8080` | Monitoring dashboard port; set empty to disable |
+| `DASHBOARD_PASSWORD` | (empty = no auth) | Requires HTTP Basic Auth on the dashboard; **set this before exposing the dashboard beyond localhost** |
 | `TLS_CERT_FILE` | (empty = no TLS) | Path to TLS cert PEM |
 | `TLS_KEY_FILE` | (empty = no TLS) | Path to TLS key PEM |
 | `MAXMEMORY_MB` | (empty = unlimited) | Approximate memory ceiling; writes past it are rejected with `-OOM` |

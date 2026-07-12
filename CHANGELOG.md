@@ -1,7 +1,21 @@
 # Changelog
 
-This project hasn't cut a tagged release yet, so entries are grouped by the
-development phase they landed in rather than a version number.
+## Unreleased
+
+### Added
+- `DASHBOARD_PASSWORD`: the observability dashboard (`/` and the `/monitor`
+  SSE stream) had no access control at all — anyone who could reach the port
+  saw live command data, including values unless `SENSITIVE_KEYS` was set.
+  Setting this env var now requires HTTP Basic Auth (any username, that
+  password, constant-time compared) on every dashboard route. Empty by
+  default for backward compatibility, matching the rest of the server's
+  opt-in pattern — but this is a real exposure if left unset on anything
+  beyond localhost/a trusted network, not just a convenience default.
+
+## v0.1.0
+
+Entries below are grouped by the development phase they landed in rather
+than finer-grained version numbers.
 
 ## Known limitations
 
