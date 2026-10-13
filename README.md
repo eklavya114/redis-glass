@@ -8,7 +8,7 @@
 A Redis-protocol-compatible key-value store, written from scratch in Go with
 zero external dependencies — and the one you can actually *see inside of*.
 
-Every Redis-compatible server has the same blind spot: you can't see what's
+Every Redis compatible server has the same blind spot: you can't see what's
 happening inside it without bolting on RedisInsight, standing up Prometheus +
 `redis_exporter`, or grep-ing through a live `MONITOR` session. redis-glass
 ships that visibility as a built-in, zero-config dashboard — a live command
